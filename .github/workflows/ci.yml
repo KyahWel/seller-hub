@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NX_NO_CLOUD: true
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Sets NX_BASE / NX_HEAD so `nx affected` only runs what changed.
+      - uses: nrwl/nx-set-shas@v4
+
+      - run: npx nx format:check
+      - run: npx nx affected -t lint test build typecheck
+
+      - run: npx playwright install --with-deps chromium
+      - run: npx nx affected -t e2e

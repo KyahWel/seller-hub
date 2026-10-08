@@ -1,0 +1,75 @@
+# Production-like stack: docker compose up --build
+# web → http://localhost:4200, API gateway → http://localhost:3000/api
+
+services:
+  users-service:
+    build:
+      context: .
+      dockerfile: docker/nest.Dockerfile
+      args:
+        APP: users-service
+    environment:
+      USERS_SERVICE_PORT: 3001
+
+  orders-service:
+    build:
+      context: .
+      dockerfile: docker/nest.Dockerfile
+      args:
+        APP: orders-service
+    environment:
+      ORDERS_SERVICE_PORT: 3002
+
+  products-service:
+    build:
+      context: .
+      dockerfile: docker/nest.Dockerfile
+      args:
+        APP: products-service
+    environment:
+      PRODUCTS_SERVICE_PORT: 3003
+
+  buyers-service:
+    build:
+      context: .
+      dockerfile: docker/nest.Dockerfile
+      args:
+        APP: buyers-service
+    environment:
+      BUYERS_SERVICE_PORT: 3004
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: docker/nest.Dockerfile
+      args:
+        APP: api-gateway
+    environment:
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:4200
+      USERS_SERVICE_HOST: users-service
+      USERS_SERVICE_PORT: 3001
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_PORT: 3002
+      PRODUCTS_SERVICE_HOST: products-service
+      PRODUCTS_SERVICE_PORT: 3003
+      BUYERS_SERVICE_HOST: buyers-service
+      BUYERS_SERVICE_PORT: 3004
+    ports:
+      - '3000:3000'
+    depends_on:
+      - users-service
+      - orders-service
+      - products-service
+      - buyers-service
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/nuxt.Dockerfile
+    environment:
+      NUXT_API_BASE_URL: http://api-gateway:3000/api
+    ports:
+      - '4200:3000'
+    depends_on:
+      - api-gateway

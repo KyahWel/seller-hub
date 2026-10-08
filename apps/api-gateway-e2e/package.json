@@ -1,0 +1,37 @@
+{
+  "name": "@org/api-gateway-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "tags": [
+      "type:e2e",
+      "scope:api"
+    ],
+    "implicitDependencies": [
+      "@org/api-gateway",
+      "@org/users-service",
+      "@org/orders-service",
+      "@org/products-service",
+      "@org/buyers-service"
+    ],
+    "targets": {
+      "e2e": {
+        "command": "jest --config jest.config.cts --runInBand",
+        "options": {
+          "cwd": "{projectRoot}"
+        },
+        "dependsOn": [
+          "@org/api-gateway:build",
+          "@org/api-gateway:serve",
+          "@org/users-service:serve",
+          "@org/orders-service:serve",
+          "@org/products-service:serve",
+          "@org/buyers-service:serve"
+        ],
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ]
+      }
+    }
+  }
+}

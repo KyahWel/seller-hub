@@ -1,0 +1,28 @@
+{
+  "name": "@org/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "nx": {
+    "tags": [
+      "type:app",
+      "scope:web"
+    ],
+    "targets": {
+      "typecheck": {
+        "command": "nuxt typecheck",
+        "options": {
+          "cwd": "{projectRoot}"
+        },
+        "cache": true,
+        "inputs": [
+          "default",
+          "^production"
+        ]
+      }
+    }
+  },
+  "dependencies": {
+    "@org/contracts": "*"
+  }
+}

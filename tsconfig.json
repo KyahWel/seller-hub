@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/api-gateway-e2e"
+    },
+    {
+      "path": "./apps/api-gateway"
+    },
+    {
+      "path": "./apps/users-service"
+    },
+    {
+      "path": "./apps/orders-service"
+    },
+    {
+      "path": "./libs/shared/contracts"
+    },
+    {
+      "path": "./apps/web-e2e"
+    },
+    {
+      "path": "./libs/api/core"
+    },
+    {
+      "path": "./apps/products-service"
+    },
+    {
+      "path": "./apps/buyers-service"
+    }
+  ],
+  "compilerOptions": {}
+}

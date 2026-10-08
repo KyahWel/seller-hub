@@ -1,0 +1,85 @@
+import {
+  ORDER_STATUSES,
+  PAYMENT_METHODS,
+  SALES_CHANNELS,
+  type CreateOrderPayload,
+  type OrderItem,
+  type OrderStatus,
+  type PaymentMethod,
+  type SalesChannel,
+  type UpdateOrderPayload,
+} from '@org/contracts';
+import { Type } from 'class-transformer';
+import {
+  ArrayMinSize,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+/** Amounts are integer centavos. */
+export class OrderItemDto implements OrderItem {
+  @IsOptional()
+  @IsUUID()
+  productId?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  name!: string;
+
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @IsInt()
+  @Min(0)
+  unitPrice!: number;
+}
+
+export class CreateOrderDto implements CreateOrderPayload {
+  @IsUUID()
+  sellerId!: string;
+
+  @IsOptional()
+  @IsUUID()
+  buyerId?: string;
+
+  @IsIn(SALES_CHANNELS)
+  channel!: SalesChannel;
+
+  @IsIn(PAYMENT_METHODS)
+  paymentMethod!: PaymentMethod;
+
+  @ValidateNested({ each: true })
+  @ArrayMinSize(1)
+  @Type(() => OrderItemDto)
+  items!: OrderItemDto[];
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  shippingFee?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}
+
+export class UpdateOrderDto implements UpdateOrderPayload {
+  @IsOptional()
+  @IsIn(ORDER_STATUSES)
+  status?: OrderStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}

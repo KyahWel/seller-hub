@@ -1,0 +1,34 @@
+{
+  "name": "@org/api-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@org/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/microservices": "^11.2.7",
+    "@org/contracts": "*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "rxjs": "^7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "nx": {
+    "tags": [
+      "type:lib",
+      "scope:api"
+    ]
+  }
+}
