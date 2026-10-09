@@ -4,11 +4,12 @@ export type CrudQuery = Record<string, string | number | undefined>;
 
 /**
  * Client for a resource exposed by the gateway's `CrudHttpController`
- * (`/api/<resource>`). The list refetches whenever `query` changes.
+ * (`/api/<resource>`). The list refetches whenever `query` changes. The
+ * gateway scopes every request to the signed-in seller.
  *
  * ```ts
- * const products = useCrud<Product, CreateProductPayload, UpdateProductPayload>(
- *   'products', () => ({ sellerId: sellerId.value }),
+ * const products = useCrud<Product, ProductFormValue, UpdateProductPayload>(
+ *   'products', () => ({ sku: sku.value }),
  * );
  * ```
  */

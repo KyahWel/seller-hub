@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   type Type,
   ValidationPipe,
 } from '@nestjs/common';
@@ -28,16 +29,26 @@ export interface CrudHttpControllerOptions<T extends BaseEntity> {
   createDto: Type;
   /** class-validator DTO for `PATCH` bodies. */
   updateDto: Type;
-  /** Query-string keys passed through as exact-match filters, e.g. `['sellerId']`. */
+  /** Query-string keys passed through as exact-match filters, e.g. `['status']`. */
   filterBy?: readonly (keyof T & string)[];
+  /**
+   * Restricts every operation to records matching the returned fields, e.g.
+   * `(req) => ({ sellerId: signedInSeller(req) })`. It overrides list
+   * filters, is merged into created records, and makes reads, updates and
+   * deletes of other records answer 404.
+   */
+  scope?: (request: unknown) => Partial<T>;
 }
 
 export interface CrudHttpHandlers<T extends BaseEntity, C, U> {
-  findAll(query: Record<string, unknown>): Promise<Paginated<T>>;
-  findOne(id: string): Promise<T>;
-  create(dto: C): Promise<T>;
-  update(id: string, dto: U): Promise<T>;
-  remove(id: string): Promise<T>;
+  findAll(
+    query: Record<string, unknown>,
+    request?: unknown,
+  ): Promise<Paginated<T>>;
+  findOne(id: string, request?: unknown): Promise<T>;
+  create(dto: C, request?: unknown): Promise<T>;
+  update(id: string, dto: U, request?: unknown): Promise<T>;
+  remove(id: string, request?: unknown): Promise<T>;
 }
 
 const validate = (expectedType: Type) =>
@@ -66,6 +77,8 @@ export function CrudHttpController<T extends BaseEntity, C, U>(
   options: CrudHttpControllerOptions<T>,
 ): abstract new (client: ClientProxy) => CrudHttpHandlers<T, C, U> {
   const { patterns, createDto, updateDto, filterBy = [] } = options;
+  const scopeOf = (request: unknown): Partial<T> | undefined =>
+    options.scope?.(request);
   const listQuery = new ValidationPipe({
     expectedType: ListQueryDto,
     transform: true,
@@ -78,6 +91,7 @@ export function CrudHttpController<T extends BaseEntity, C, U>(
     findAll(
       // Typed loosely so the global pipe leaves the filter keys alone.
       @Query(listQuery) query: Record<string, unknown>,
+      @Req() request?: unknown,
     ): Promise<Paginated<T>> {
       const { page, limit } = query as ListQueryDto;
       const where: Partial<T> = {};
@@ -89,34 +103,51 @@ export function CrudHttpController<T extends BaseEntity, C, U>(
       return this.send<Paginated<T>, ListQuery<T>>(patterns.FindAll, {
         page,
         limit,
-        where,
+        where: { ...where, ...scopeOf(request) },
       });
     }
 
     @Get(':id')
-    findOne(@Param('id', ParseUUIDPipe) id: string): Promise<T> {
-      return this.send<T, IdPayload>(patterns.FindOne, { id });
+    findOne(
+      @Param('id', ParseUUIDPipe) id: string,
+      @Req() request?: unknown,
+    ): Promise<T> {
+      return this.send<T, IdPayload<T>>(patterns.FindOne, {
+        id,
+        scope: scopeOf(request),
+      });
     }
 
     @Post()
-    create(@Body(validate(createDto)) dto: C): Promise<T> {
-      return this.send<T, C>(patterns.Create, dto);
+    create(
+      @Body(validate(createDto)) dto: C,
+      @Req() request?: unknown,
+    ): Promise<T> {
+      return this.send<T, C>(patterns.Create, { ...dto, ...scopeOf(request) });
     }
 
     @Patch(':id')
     update(
       @Param('id', ParseUUIDPipe) id: string,
       @Body(validate(updateDto)) dto: U,
+      @Req() request?: unknown,
     ): Promise<T> {
-      return this.send<T, UpdatePayload<U>>(patterns.Update, {
+      return this.send<T, UpdatePayload<U, T>>(patterns.Update, {
         id,
         changes: dto,
+        scope: scopeOf(request),
       });
     }
 
     @Delete(':id')
-    remove(@Param('id', ParseUUIDPipe) id: string): Promise<T> {
-      return this.send<T, IdPayload>(patterns.Remove, { id });
+    remove(
+      @Param('id', ParseUUIDPipe) id: string,
+      @Req() request?: unknown,
+    ): Promise<T> {
+      return this.send<T, IdPayload<T>>(patterns.Remove, {
+        id,
+        scope: scopeOf(request),
+      });
     }
 
     private send<R, P>(pattern: string, payload: P): Promise<R> {

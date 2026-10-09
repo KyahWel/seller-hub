@@ -9,7 +9,7 @@ import {
   type SalesChannel,
 } from '@org/contracts';
 
-/** The order without `sellerId`, which the page adds. Amounts are centavos. */
+/** The order without `sellerId`, which the gateway sets. Amounts are centavos. */
 export type OrderFormValue = Omit<CreateOrderPayload, 'sellerId'>;
 
 interface ItemRow {

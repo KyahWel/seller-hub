@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { CredentialsRepository } from './credentials.repository';
 import { UsersController } from './users.controller';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
@@ -9,27 +10,31 @@ describe('UsersController', () => {
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [UsersService, UsersRepository],
+      providers: [UsersService, UsersRepository, CredentialsRepository],
     }).compile();
 
     controller = moduleRef.get(UsersController);
   });
 
-  it('handles the CRUD patterns through the service', async () => {
-    const created = await controller.create({
+  it('registers, verifies and updates through the service', async () => {
+    const created = await controller.register({
       name: 'Ada',
       email: 'ada@example.com',
+      password: 'secret-pass',
     });
 
-    await expect(controller.findOne({ id: created.id })).resolves.toEqual(
-      created,
-    );
-    await expect(controller.findAll()).resolves.toMatchObject({
-      items: [created],
-      total: 1,
-    });
     await expect(
-      controller.update({ id: created.id, changes: { name: 'Ada L.' } }),
+      controller.verifyCredentials({
+        email: 'ada@example.com',
+        password: 'secret-pass',
+      }),
+    ).resolves.toEqual(created);
+    await expect(
+      controller.update({
+        id: created.id,
+        changes: { name: 'Ada L.' },
+        scope: { id: created.id },
+      }),
     ).resolves.toMatchObject({ name: 'Ada L.' });
   });
 });

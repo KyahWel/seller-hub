@@ -68,6 +68,25 @@ describe('CrudService', () => {
     });
   });
 
+  it('treats records outside the scope as missing', async () => {
+    const note = await service.create({ title: 'a' });
+    const otherScope = { slug: 'b' };
+
+    for (const call of [
+      () => service.findOne(note.id, otherScope),
+      () => service.update(note.id, { title: 'x' }, otherScope),
+      () => service.remove(note.id, otherScope),
+    ]) {
+      const error = await call().catch((e: unknown) => e);
+      expect((error as RpcException).getError()).toMatchObject({
+        statusCode: 404,
+      });
+    }
+    await expect(service.findOne(note.id, { slug: 'a' })).resolves.toEqual(
+      note,
+    );
+  });
+
   it.each(['findOne', 'remove'] as const)(
     '%s throws a 404 RpcException for a missing id',
     async (method) => {

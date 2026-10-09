@@ -41,9 +41,12 @@ export abstract class CrudService<
     return { items, total, page: safePage, limit: safeLimit };
   }
 
-  async findOne(id: string): Promise<T> {
+  /** Throws 404 when the record is missing or does not match `scope`. */
+  async findOne(id: string, scope?: Partial<T>): Promise<T> {
     const entity = await this.repository.findById(id);
-    if (!entity) throw notFound(this.entityName, id);
+    if (!entity || !matchesScope(entity, scope)) {
+      throw notFound(this.entityName, id);
+    }
     return entity;
   }
 
@@ -51,8 +54,8 @@ export abstract class CrudService<
     return this.repository.create(await this.toCreateData(payload));
   }
 
-  async update(id: string, changes: U): Promise<T> {
-    const existing = await this.findOne(id);
+  async update(id: string, changes: U, scope?: Partial<T>): Promise<T> {
+    const existing = await this.findOne(id, scope);
     const updated = await this.repository.update(
       id,
       await this.toUpdateData(changes, existing),
@@ -61,7 +64,8 @@ export abstract class CrudService<
     return updated;
   }
 
-  async remove(id: string): Promise<T> {
+  async remove(id: string, scope?: Partial<T>): Promise<T> {
+    await this.findOne(id, scope);
     const removed = await this.repository.delete(id);
     if (!removed) throw notFound(this.entityName, id);
     return removed;
@@ -80,4 +84,11 @@ export abstract class CrudService<
   ): Partial<EntityData<T>> | Promise<Partial<EntityData<T>>> {
     return changes as unknown as Partial<EntityData<T>>;
   }
+}
+
+function matchesScope<T>(entity: T, scope?: Partial<T>): boolean {
+  if (!scope) return true;
+  return Object.entries(scope).every(
+    ([key, value]) => entity[key as keyof T] === value,
+  );
 }

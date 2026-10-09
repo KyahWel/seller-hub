@@ -6,14 +6,13 @@ import type {
 } from '@org/contracts';
 import type { ProductFormValue } from '~/components/ProductForm.vue';
 
-definePageMeta({ middleware: 'seller' });
 useHead({ title: 'Products' });
 
-const { sellerId } = useActiveSeller();
-const products = useCrud<Product, CreateProductPayload, UpdateProductPayload>(
-  'products',
-  () => ({ sellerId: sellerId.value ?? undefined, limit: 100 }),
-);
+const products = useCrud<
+  Product,
+  Omit<CreateProductPayload, 'sellerId'>,
+  UpdateProductPayload
+>('products', { limit: 100 });
 const editingId = ref<string | null>(null);
 const actionError = ref<string | null>(null);
 
@@ -29,12 +28,7 @@ async function run(action: () => Promise<unknown>, fallback: string) {
 }
 
 function onCreate(value: ProductFormValue) {
-  if (!sellerId.value) return;
-  const seller = sellerId.value;
-  run(
-    () => products.create({ ...value, sellerId: seller }),
-    'Could not add the product.',
-  );
+  run(() => products.create(value), 'Could not add the product.');
 }
 
 async function onUpdate(id: string, value: ProductFormValue) {

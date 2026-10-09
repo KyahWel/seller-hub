@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   Matches,
   MaxLength,
 } from 'class-validator';
@@ -33,13 +32,11 @@ export class UpdateBuyerDto implements UpdateBuyerPayload {
   notes?: string;
 }
 
+/** `sellerId` is not accepted: the gateway sets it from the session. */
 export class CreateBuyerDto
   extends UpdateBuyerDto
-  implements CreateBuyerPayload
+  implements Omit<CreateBuyerPayload, 'sellerId'>
 {
-  @IsUUID()
-  sellerId!: string;
-
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)

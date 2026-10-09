@@ -74,6 +74,7 @@
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.0",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/microservices": "^11.2.7",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/throttler": "^6.7.1",

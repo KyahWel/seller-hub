@@ -1,44 +1,45 @@
-import { Controller, Get, Inject, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Patch } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { CrudHttpController, sendRpc } from '@org/api-core';
+import { sendRpc } from '@org/api-core';
 import {
-  ListQuery,
-  Order,
-  ORDERS_SERVICE,
-  OrdersPatterns,
-  Paginated,
+  IdPayload,
+  UpdatePayload,
+  UpdateUserPayload,
   User,
   USERS_SERVICE,
   UsersPatterns,
 } from '@org/contracts';
-import { CreateUserDto, UpdateUserDto } from './user.dto';
+import { CurrentSeller } from '../auth/current-seller.decorator';
+import { UpdateUserDto } from './user.dto';
 
+/**
+ * The signed-in seller's own account. Accounts are created through
+ * `POST /auth/register`; there is no way to list or read other sellers.
+ */
 @Controller('users')
-export class UsersController extends CrudHttpController<
-  User,
-  CreateUserDto,
-  UpdateUserDto
->({
-  patterns: UsersPatterns,
-  createDto: CreateUserDto,
-  updateDto: UpdateUserDto,
-}) {
+export class UsersController {
   constructor(
-    @Inject(USERS_SERVICE) usersClient: ClientProxy,
-    @Inject(ORDERS_SERVICE) private readonly ordersClient: ClientProxy,
-  ) {
-    super(usersClient);
+    @Inject(USERS_SERVICE) private readonly usersClient: ClientProxy,
+  ) {}
+
+  @Get('me')
+  me(@CurrentSeller() sellerId: string): Promise<User> {
+    return sendRpc<User, IdPayload<User>>(
+      this.usersClient,
+      UsersPatterns.FindOne,
+      { id: sellerId },
+    );
   }
 
-  /** A seller's orders. */
-  @Get(':id/orders')
-  findOrders(
-    @Param('id', ParseUUIDPipe) sellerId: string,
-  ): Promise<Paginated<Order>> {
-    return sendRpc<Paginated<Order>, ListQuery<Order>>(
-      this.ordersClient,
-      OrdersPatterns.FindAll,
-      { where: { sellerId } },
+  @Patch('me')
+  updateMe(
+    @CurrentSeller() sellerId: string,
+    @Body() dto: UpdateUserDto,
+  ): Promise<User> {
+    return sendRpc<User, UpdatePayload<UpdateUserPayload, User>>(
+      this.usersClient,
+      UsersPatterns.Update,
+      { id: sellerId, changes: dto },
     );
   }
 }

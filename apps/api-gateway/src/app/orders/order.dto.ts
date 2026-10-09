@@ -52,10 +52,8 @@ export class OrderItemDto implements OrderItem {
   unitPrice!: number;
 }
 
-export class CreateOrderDto implements CreateOrderPayload {
-  @IsUUID()
-  sellerId!: string;
-
+/** `sellerId` is not accepted: the gateway sets it from the session. */
+export class CreateOrderDto implements Omit<CreateOrderPayload, 'sellerId'> {
   @IsOptional()
   @IsUUID()
   buyerId?: string;

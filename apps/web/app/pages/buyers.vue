@@ -6,26 +6,23 @@ import type {
 } from '@org/contracts';
 import type { BuyerFormValue } from '~/components/BuyerForm.vue';
 
-definePageMeta({ middleware: 'seller' });
 useHead({ title: 'Buyers' });
 
-const { sellerId } = useActiveSeller();
 const phoneSearch = ref('');
-const buyers = useCrud<Buyer, CreateBuyerPayload, UpdateBuyerPayload>(
-  'buyers',
-  () => ({
-    sellerId: sellerId.value ?? undefined,
-    phone: phoneSearch.value.trim() || undefined,
-    limit: 100,
-  }),
-);
+const buyers = useCrud<
+  Buyer,
+  Omit<CreateBuyerPayload, 'sellerId'>,
+  UpdateBuyerPayload
+>('buyers', () => ({
+  phone: phoneSearch.value.trim() || undefined,
+  limit: 100,
+}));
 const actionError = ref<string | null>(null);
 
 async function onCreate(value: BuyerFormValue) {
-  if (!sellerId.value) return;
   actionError.value = null;
   try {
-    await buyers.create({ ...value, sellerId: sellerId.value });
+    await buyers.create(value);
   } catch (error) {
     actionError.value = apiErrorMessage(error, 'Could not add the buyer.');
   }

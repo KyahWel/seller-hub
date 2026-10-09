@@ -11,10 +11,10 @@ import type { CrudService } from './crud.service.js';
 
 export interface CrudMessageHandlers<T extends BaseEntity, C, U> {
   findAll(query?: ListQuery<T>): Promise<Paginated<T>>;
-  findOne(payload: IdPayload): Promise<T>;
+  findOne(payload: IdPayload<T>): Promise<T>;
   create(payload: C): Promise<T>;
-  update(payload: UpdatePayload<U>): Promise<T>;
-  remove(payload: IdPayload): Promise<T>;
+  update(payload: UpdatePayload<U, T>): Promise<T>;
+  remove(payload: IdPayload<T>): Promise<T>;
 }
 
 /**
@@ -47,8 +47,8 @@ export function CrudMessageController<T extends BaseEntity, C, U>(
     }
 
     @MessagePattern(patterns.FindOne)
-    findOne(@Payload() { id }: IdPayload): Promise<T> {
-      return this.service.findOne(id);
+    findOne(@Payload() { id, scope }: IdPayload<T>): Promise<T> {
+      return this.service.findOne(id, scope);
     }
 
     @MessagePattern(patterns.Create)
@@ -57,13 +57,13 @@ export function CrudMessageController<T extends BaseEntity, C, U>(
     }
 
     @MessagePattern(patterns.Update)
-    update(@Payload() { id, changes }: UpdatePayload<U>): Promise<T> {
-      return this.service.update(id, changes);
+    update(@Payload() { id, changes, scope }: UpdatePayload<U, T>): Promise<T> {
+      return this.service.update(id, changes, scope);
     }
 
     @MessagePattern(patterns.Remove)
-    remove(@Payload() { id }: IdPayload): Promise<T> {
-      return this.service.remove(id);
+    remove(@Payload() { id, scope }: IdPayload<T>): Promise<T> {
+      return this.service.remove(id, scope);
     }
   }
   return CrudMessageControllerBase;

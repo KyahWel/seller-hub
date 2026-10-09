@@ -44,11 +44,14 @@ cp .env.example .env   # optional, the defaults work locally
 npm run dev            # web + gateway + both microservices
 ```
 
-- Web: http://localhost:4200. Add a seller on `/sellers` first; the other pages work on the active seller (stored in a cookie until login exists). `useCrud('<resource>')` is the client for any gateway CRUD resource.
+- Web: http://localhost:4200. Create an account on `/register`; every page shows the signed-in seller's data. `useSession()` holds the signed-in seller and `useCrud('<resource>')` is the client for any gateway CRUD resource.
 - API: http://localhost:3000/api
-  - `GET /api/health`
-  - CRUD on `/api/users`, `/api/orders`, `/api/products`, `/api/buyers`: `GET /` (paginated, `?page=&limit=` plus filters such as `?sellerId=`), `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id`
-  - `GET /api/users/:id/orders`: a seller's orders
+  - `GET /api/health` (public)
+  - `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` (public): set or clear the `session` cookie
+  - `GET /api/users/me`, `PATCH /api/users/me`: the signed-in seller's account
+  - CRUD on `/api/orders`, `/api/products`, `/api/buyers`: `GET /` (paginated, `?page=&limit=` plus filters such as `?status=`), `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id`. Every route needs a session and only sees the signed-in seller's records; `sellerId` is set by the gateway.
+
+  Without `JWT_SECRET` the gateway signs sessions with a random secret, so restarting it signs everyone out.
 
 Run only part of the stack with `npm run start:api` or `npm run start:web`, or start one project with `npx nx serve @org/users-service`.
 
@@ -110,18 +113,21 @@ After generating:
 
 What is in place, and what is not yet:
 
-| Layer              | Measure                                                                                                                                                                             |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gateway            | `helmet` security headers, `x-powered-by` removed                                                                                                                                   |
-| Gateway            | Rate limit per client IP (`THROTTLE_LIMIT` per `THROTTLE_TTL_MS`, default 120/min), health check exempt                                                                             |
-| Gateway            | JSON bodies capped at `BODY_LIMIT` (100kb), unknown fields rejected (`forbidNonWhitelisted`), upper bounds on quantities, amounts and items per order                               |
-| Gateway → services | `sendRpc` times out after 5s (504) and reports unreachable services as 503; 5xx details from services are never sent to clients                                                     |
-| Services           | Bind to `127.0.0.1` by default. The TCP transport has **no authentication**: in Docker they listen on the private network with no published ports. Never expose 3001–3004 publicly  |
-| Web                | Clickjacking protection (`frame-ancestors 'none'`, `X-Frame-Options`), `nosniff`, referrer and permissions policies, HSTS in production builds                                      |
-| Web → gateway      | The `/api` proxy overwrites `X-Forwarded-For` with the real client address, so the rate limit cannot be dodged by spoofing it (production builds; `nuxt dev` does not enforce this) |
-| Supply chain       | CI fails on high/critical advisories in production dependencies (`npm audit --omit=dev`); Dependabot opens weekly update PRs                                                        |
+| Layer              | Measure                                                                                                                                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Gateway            | Session in an `httpOnly`, `SameSite=Lax` cookie holding a JWT (HS256, 7 days, `JWT_SECRET` required in production); every route needs it unless marked `@Public()`. Passwords hashed with scrypt; login and sign-up limited to 10 attempts per minute per IP |
+| Gateway            | Products, buyers and orders are scoped to the signed-in seller; other sellers' records return 404                                                                                                                                                            |
+| Gateway            | Cross-site writes refused unless their `Origin` is one of `CORS_ORIGIN` (CSRF)                                                                                                                                                                               |
+| Gateway            | `helmet` security headers, `x-powered-by` removed                                                                                                                                                                                                            |
+| Gateway            | Rate limit per client IP (`THROTTLE_LIMIT` per `THROTTLE_TTL_MS`, default 120/min), health check exempt                                                                                                                                                      |
+| Gateway            | JSON bodies capped at `BODY_LIMIT` (100kb), unknown fields rejected (`forbidNonWhitelisted`), upper bounds on quantities, amounts and items per order                                                                                                        |
+| Gateway → services | `sendRpc` times out after 5s (504) and reports unreachable services as 503; 5xx details from services are never sent to clients                                                                                                                              |
+| Services           | Bind to `127.0.0.1` by default. The TCP transport has **no authentication**: in Docker they listen on the private network with no published ports. Never expose 3001–3004 publicly                                                                           |
+| Web                | Clickjacking protection (`frame-ancestors 'none'`, `X-Frame-Options`), `nosniff`, referrer and permissions policies, HSTS in production builds                                                                                                               |
+| Web → gateway      | The `/api` proxy overwrites `X-Forwarded-For` with the real client address, so the rate limit cannot be dodged by spoofing it (production builds; `nuxt dev` does not enforce this)                                                                          |
+| Supply chain       | CI fails on high/critical advisories in production dependencies (`npm audit --omit=dev`); Dependabot opens weekly update PRs                                                                                                                                 |
 
-**Not yet covered:** authentication and per-seller authorization. Until login exists, anyone who can reach the app can read and change every seller's data, so do not deploy it publicly with real data. Also planned: encrypted service-to-service traffic (TLS or a service mesh) if services ever run on separate hosts, and a full Content Security Policy (script nonces via `nuxt-security`).
+**Not yet covered:** data is kept in memory (#8), and logout only clears the cookie, so a copied session token stays valid until it expires (#9). Also planned: encrypted service-to-service traffic (TLS or a service mesh) if services ever run on separate hosts, and a full Content Security Policy (script nonces via `nuxt-security`).
 
 ## Docker
 

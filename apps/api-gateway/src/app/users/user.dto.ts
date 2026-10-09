@@ -1,4 +1,4 @@
-import type { CreateUserPayload, UpdateUserPayload } from '@org/contracts';
+import type { UpdateUserPayload } from '@org/contracts';
 import {
   IsEmail,
   IsNotEmpty,
@@ -6,16 +6,6 @@ import {
   IsString,
   MaxLength,
 } from 'class-validator';
-
-export class CreateUserDto implements CreateUserPayload {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  name!: string;
-
-  @IsEmail()
-  email!: string;
-}
 
 export class UpdateUserDto implements UpdateUserPayload {
   @IsOptional()
@@ -26,5 +16,6 @@ export class UpdateUserDto implements UpdateUserPayload {
 
   @IsOptional()
   @IsEmail()
+  @MaxLength(254)
   email?: string;
 }

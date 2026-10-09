@@ -2,7 +2,6 @@
 import type {
   Buyer,
   CreateBuyerPayload,
-  CreateOrderPayload,
   CreateProductPayload,
   Order,
   Product,
@@ -11,29 +10,26 @@ import type {
 } from '@org/contracts';
 import type { OrderFormValue } from '~/components/OrderForm.vue';
 
-definePageMeta({ middleware: 'seller' });
 useHead({ title: 'New order' });
 
-const { sellerId } = useActiveSeller();
-const bySeller = () => ({ sellerId: sellerId.value ?? undefined, limit: 100 });
+const all = { limit: 100 };
 const products = useCrud<Product, CreateProductPayload, UpdateProductPayload>(
   'products',
-  bySeller,
+  all,
 );
 const buyers = useCrud<Buyer, CreateBuyerPayload, UpdateBuyerPayload>(
   'buyers',
-  bySeller,
+  all,
 );
 
 const submitError = ref<string | null>(null);
 
 async function onSubmit(value: OrderFormValue) {
-  if (!sellerId.value) return;
   submitError.value = null;
   try {
     const order = await $fetch<Order>('/api/orders', {
       method: 'POST',
-      body: { ...value, sellerId: sellerId.value } satisfies CreateOrderPayload,
+      body: value,
     });
     await navigateTo(`/orders/${order.id}`);
   } catch (error) {

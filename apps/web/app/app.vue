@@ -1,13 +1,22 @@
 <script setup lang="ts">
-const { seller } = useActiveSeller();
+const { seller, logout } = useSession();
 const route = useRoute();
+const logoutError = ref(false);
+
+async function onLogout() {
+  logoutError.value = false;
+  try {
+    await logout();
+  } catch {
+    logoutError.value = true;
+  }
+}
 
 const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/orders', label: 'Orders' },
   { to: '/products', label: 'Products' },
   { to: '/buyers', label: 'Buyers' },
-  { to: '/sellers', label: 'Sellers' },
 ];
 
 const isActive = (to: string) =>
@@ -16,18 +25,26 @@ const isActive = (to: string) =>
 
 <template>
   <div class="layout">
-    <header>
+    <header :class="{ 'signed-out': !seller }">
       <div class="top">
         <NuxtLink to="/" class="brand">Seller Hub</NuxtLink>
-        <NuxtLink
-          to="/sellers"
-          class="active-seller"
-          data-testid="active-seller"
-        >
-          {{ seller ? seller.name : 'Choose seller' }}
-        </NuxtLink>
+        <div v-if="seller" class="account">
+          <span class="seller-name" data-testid="seller-name">
+            {{ seller.name }}
+          </span>
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm"
+            @click="onLogout"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
-      <nav aria-label="Main">
+      <p v-if="logoutError" class="error" role="alert">
+        Could not sign out. Try again.
+      </p>
+      <nav v-if="seller" aria-label="Main">
         <NuxtLink
           v-for="link in links"
           :key="link.to"
@@ -60,6 +77,10 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+header.signed-out {
+  padding-bottom: 1.25rem;
+}
+
 .top {
   display: flex;
   align-items: center;
@@ -72,11 +93,18 @@ header {
   font-size: 1.125rem;
 }
 
-.active-seller {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+.account {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.seller-name {
+  overflow: hidden;
   font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 nav {

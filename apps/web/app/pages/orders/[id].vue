@@ -7,8 +7,6 @@ import {
   type UpdateOrderPayload,
 } from '@org/contracts';
 
-definePageMeta({ middleware: 'seller' });
-
 const route = useRoute();
 const id = computed(() => String(route.params.id));
 
@@ -17,11 +15,15 @@ const {
   error,
   refresh,
 } = useFetch<Order>(() => `/api/orders/${id.value}`);
+// Forwards the session cookie during SSR, which plain `$fetch` does not.
+const requestFetch = useRequestFetch();
 const { data: buyer } = useAsyncData(
   () => `buyer:${order.value?.buyerId ?? 'none'}`,
   () =>
     order.value?.buyerId
-      ? $fetch<Buyer>(`/api/buyers/${order.value.buyerId}`).catch(() => null)
+      ? requestFetch<Buyer>(`/api/buyers/${order.value.buyerId}`).catch(
+          () => null,
+        )
       : Promise.resolve(null),
 );
 

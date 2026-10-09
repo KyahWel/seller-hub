@@ -7,7 +7,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -46,13 +45,11 @@ export class UpdateProductDto implements UpdateProductPayload {
   stock?: number;
 }
 
+/** `sellerId` is not accepted: the gateway sets it from the session. */
 export class CreateProductDto
   extends UpdateProductDto
-  implements CreateProductPayload
+  implements Omit<CreateProductPayload, 'sellerId'>
 {
-  @IsUUID()
-  sellerId!: string;
-
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)

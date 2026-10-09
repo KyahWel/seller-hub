@@ -5,14 +5,13 @@ import type {
   UpdateOrderPayload,
 } from '@org/contracts';
 
-definePageMeta({ middleware: 'seller' });
 useHead({ title: 'Dashboard' });
 
-const { sellerId, seller } = useActiveSeller();
+const { seller } = useSession();
 // Stats from the latest 100 orders. A stats endpoint replaces this later.
 const orders = useCrud<Order, CreateOrderPayload, UpdateOrderPayload>(
   'orders',
-  () => ({ sellerId: sellerId.value ?? undefined, limit: 100 }),
+  { limit: 100 },
 );
 
 const stats = computed(() => {

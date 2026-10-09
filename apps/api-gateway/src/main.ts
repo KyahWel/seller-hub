@@ -5,6 +5,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { RpcToHttpExceptionFilter } from '@org/api-core';
 import helmet from 'helmet';
 import { AppModule } from './app/app.module';
+import { rejectCrossOriginWrites } from './app/auth/same-origin.middleware';
 
 // Load `.env` from the working directory when present (no-op otherwise).
 try {
@@ -25,11 +26,16 @@ async function bootstrap() {
   app.use(helmet());
   app.useBodyParser('json', { limit: config.get('BODY_LIMIT', '100kb') });
 
+  // Origins of the web app (comma-separated). Used for CORS and CSRF checks.
+  const webOrigins = config
+    .get<string>('CORS_ORIGIN', 'http://localhost:4200')
+    .split(',')
+    .map((origin) => origin.trim());
+  app.use(rejectCrossOriginWrites(webOrigins));
+
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
-  app.enableCors({
-    origin: config.get<string>('CORS_ORIGIN', 'http://localhost:4200'),
-  });
+  app.enableCors({ origin: webOrigins });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

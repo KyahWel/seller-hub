@@ -23,12 +23,16 @@ export interface Paginated<T> {
   limit: number;
 }
 
-export interface IdPayload {
+export interface IdPayload<T = unknown> {
   id: string;
+  /**
+   * Only match a record whose fields equal these, e.g. `{ sellerId }` so a
+   * seller can only reach their own records. A mismatch is reported as 404.
+   */
+  scope?: Partial<T>;
 }
 
-export interface UpdatePayload<U> {
-  id: string;
+export interface UpdatePayload<U, T = unknown> extends IdPayload<T> {
   changes: U;
 }
 

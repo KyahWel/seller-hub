@@ -7,12 +7,10 @@ import {
   type UpdateOrderPayload,
 } from '@org/contracts';
 
-definePageMeta({ middleware: 'seller' });
 useHead({ title: 'Orders' });
 
 const route = useRoute();
 const router = useRouter();
-const { sellerId } = useActiveSeller();
 
 const status = computed(() => {
   const value = route.query.status;
@@ -25,7 +23,6 @@ const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 const orders = useCrud<Order, CreateOrderPayload, UpdateOrderPayload>(
   'orders',
   () => ({
-    sellerId: sellerId.value ?? undefined,
     status: status.value,
     page: page.value,
   }),
