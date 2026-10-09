@@ -29,9 +29,12 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run your local dev server before starting the tests */
+  /*
+   * The production server build: the app needs its server for SSR, the
+   * signed-out redirect and the /api proxy, so a static export won't do.
+   */
   webServer: {
-    command: 'npx nx run @org/web:serve-static',
+    command: 'npx nx run @org/web:preview',
     url: 'http://localhost:4200',
     reuseExistingServer: true,
     cwd: workspaceRoot,

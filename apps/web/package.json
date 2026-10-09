@@ -19,6 +19,20 @@
           "default",
           "^production"
         ]
+      },
+      "preview": {
+        "command": "node .output/server/index.mjs",
+        "dependsOn": [
+          "build"
+        ],
+        "continuous": true,
+        "options": {
+          "cwd": "{projectRoot}",
+          "env": {
+            "HOST": "localhost",
+            "PORT": "4200"
+          }
+        }
       }
     }
   },
