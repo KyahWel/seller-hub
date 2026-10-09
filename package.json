@@ -28,10 +28,10 @@
     "libs/api/*"
   ],
   "dependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
-    "@nestjs/microservices": "^11.2.7",
-    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/microservices": "^12.1.2",
+    "@nestjs/platform-express": "^12.1.2",
     "@nestjs/throttler": "^6.7.1",
     "axios": "^1.20.0",
     "class-transformer": "^0.5.1",
@@ -42,8 +42,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
-    "@nestjs/schematics": "^11.0.0",
-    "@nestjs/testing": "^11.0.0",
+    "@nestjs/schematics": "^12.0.6",
+    "@nestjs/testing": "^12.1.2",
     "@nuxt/devtools": "^3.0.0",
     "@nuxt/eslint-config": "^1.10.0",
     "@nuxt/kit": "^4.0.0",
