@@ -6,6 +6,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    ignore:
+      # NestJS 12 is ESM-only and breaks the Jest setup; migrate by hand (#21).
+      - dependency-name: '@nestjs/*'
+        update-types: ['version-update:semver-major']
     groups:
       # Nx plugins must stay on the same version; `nx migrate` handles them.
       nx:
