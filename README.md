@@ -1,8 +1,59 @@
 # Seller Hub
 
-Order, product and buyer management for Filipino online sellers (Facebook, Instagram, TikTok, Shopee, Lazada).
+**One place for Filipino online sellers to track orders, products and buyers across Facebook, Instagram, TikTok, Shopee and Lazada.**
 
-A TypeScript monorepo built with [Nx](https://nx.dev). It has a **Nuxt 4** frontend, a **NestJS 11** API gateway and NestJS **microservices**. All apps share types through a workspace library.
+> [!WARNING]
+> **Proof of concept — under active development, not in production.**
+> Seller Hub is an early prototype for exploring the product and the architecture. It is not deployed anywhere, has no real users, and must not hold real customer data: everything is kept in memory and is lost when the services restart. Features, APIs and data models will change without notice. See the [roadmap](#roadmap) for what is still missing before a first release.
+
+## What is Seller Hub?
+
+Many small businesses in the Philippines sell through social media and marketplaces at the same time. Orders arrive as Messenger chats, Instagram DMs, TikTok comments and marketplace notifications, and they end up in notebooks, spreadsheets or nowhere. Most of these orders are paid by **cash on delivery (COD)**, so a seller only knows they were paid once the courier delivers. When a buyer refuses the parcel, the seller has paid for shipping both ways and has nothing to show for it (a _return to sender_, or RTS).
+
+Seller Hub is a web dashboard where a seller records every order in one place, whatever channel it came from, and follows it until the money is in:
+
+- **Orders** from any channel, with items, shipping fee, payment method (COD, GCash, Maya, bank transfer) and a status that moves from _pending_ → _confirmed_ → _shipped_ → _delivered_, or ends as _returned_ or _cancelled_.
+- **Products** with price, cost, margin and stock, so new orders fill in names and prices and the seller sees what is running low.
+- **Buyers** with their mobile number, address and notes, so repeat customers are one click away.
+- **A dashboard** with open orders, delivered sales, COD still to collect, returns, recent orders and low-stock products.
+
+### Who it is for
+
+Solo sellers and small teams (resellers, home-based businesses, small brands) who sell on more than one channel and have outgrown chat threads and spreadsheets, but don't need a full e-commerce platform.
+
+### Why it exists
+
+The long-term goal is to cut the money sellers lose to bogus COD buyers and manual bookkeeping:
+
+- **Buyer risk.** Every delivered or returned order is a data point. Showing a buyer's delivery history before shipping, and later a risk score, lets a seller ask for prepayment from buyers who often refuse parcels.
+- **Less retyping.** Orders are agreed in chat, often in Taglish. An AI assistant that turns a pasted conversation into a draft order is planned.
+- **Knowing where the money is.** Delivered sales, COD still out with couriers, and losses to returns, without a spreadsheet.
+
+## What works today
+
+| Area      | Status in the proof of concept                                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Accounts  | Sign up, sign in, sign out. Each seller only sees their own products, buyers and orders                                           |
+| Orders    | Create from saved products or custom items, link a buyer, add shipping and notes; move through statuses; filter by status; paging |
+| Products  | Add, edit, delete; price, cost and margin; stock with "running low" and "sold out" badges                                         |
+| Buyers    | Add, edit, delete; Philippine mobile number validation; search by name or number                                                  |
+| Dashboard | Open orders, delivered sales, COD to collect, returns, recent orders, low stock                                                   |
+| Interface | Responsive from phone to desktop, light and dark mode                                                                             |
+| Data      | **In memory only**, lost on restart                                                                                               |
+
+## Roadmap
+
+Planned work is tracked as [GitHub issues](https://github.com/KyahWel/seller-hub/issues) in three [milestones](https://github.com/KyahWel/seller-hub/milestones):
+
+1. **Finish login**: return to sign-in when a session expires (#6), account page and password change (#7).
+2. **Foundation**: Postgres instead of memory (#8), revocable sessions (#9), email verification and password reset (#10), a stats endpoint (#11), end-to-end tests for sign-in and seller isolation (#12), a staging environment (#13), error tracking (#14), dependency upkeep (#15).
+3. **Product**: buyer RTS history and risk score (#16), Data Privacy Act (RA 10173) compliance (#17), AI chat-to-order drafts (#18), PayMongo billing (#19).
+
+Until the Foundation milestone is done, run Seller Hub only locally or in a private test environment with made-up data.
+
+## How it is built
+
+A TypeScript monorepo built with [Nx](https://nx.dev): a **Nuxt 4** web app using **Nuxt UI**, a **NestJS 11** API gateway, and NestJS **microservices**, one per area. All apps share types through a workspace library.
 
 ```
                 ┌────────────┐  HTTP   ┌──────────────┐  TCP   ┌──────────────────┐
@@ -19,18 +70,18 @@ A TypeScript monorepo built with [Nx](https://nx.dev). It has a **Nuxt 4** front
 
 ## What's inside
 
-| Path                    | Project                 | Stack                                                            | Tests                       |
-| ----------------------- | ----------------------- | ---------------------------------------------------------------- | --------------------------- |
-| `apps/web`              | `@org/web`              | Nuxt 4 seller dashboard (orders, products, buyers), `/api` proxy | Vitest + `@nuxt/test-utils` |
-| `apps/web-e2e`          | `@org/web-e2e`          | Playwright                                                       | e2e                         |
-| `apps/api-gateway`      | `@org/api-gateway`      | NestJS HTTP, validation, TCP clients                             | Jest                        |
-| `apps/api-gateway-e2e`  | `@org/api-gateway-e2e`  | Jest + axios against the running stack                           | e2e                         |
-| `apps/users-service`    | `@org/users-service`    | NestJS microservice (TCP)                                        | Jest                        |
-| `apps/orders-service`   | `@org/orders-service`   | NestJS microservice (TCP)                                        | Jest                        |
-| `apps/products-service` | `@org/products-service` | NestJS microservice (TCP)                                        | Jest                        |
-| `apps/buyers-service`   | `@org/buyers-service`   | NestJS microservice (TCP)                                        | Jest                        |
-| `libs/shared/contracts` | `@org/contracts`        | Message patterns, payload & entity types                         | Jest                        |
-| `libs/api/core`         | `@org/api-core`         | Generic CRUD: repository, service, controllers, error mapping    | Jest                        |
+| Path                    | Project                 | Stack                                                                      | Tests                       |
+| ----------------------- | ----------------------- | -------------------------------------------------------------------------- | --------------------------- |
+| `apps/web`              | `@org/web`              | Nuxt 4 + Nuxt UI seller dashboard (orders, products, buyers), `/api` proxy | Vitest + `@nuxt/test-utils` |
+| `apps/web-e2e`          | `@org/web-e2e`          | Playwright                                                                 | e2e                         |
+| `apps/api-gateway`      | `@org/api-gateway`      | NestJS HTTP, validation, TCP clients                                       | Jest                        |
+| `apps/api-gateway-e2e`  | `@org/api-gateway-e2e`  | Jest + axios against the running stack                                     | e2e                         |
+| `apps/users-service`    | `@org/users-service`    | NestJS microservice (TCP)                                                  | Jest                        |
+| `apps/orders-service`   | `@org/orders-service`   | NestJS microservice (TCP)                                                  | Jest                        |
+| `apps/products-service` | `@org/products-service` | NestJS microservice (TCP)                                                  | Jest                        |
+| `apps/buyers-service`   | `@org/buyers-service`   | NestJS microservice (TCP)                                                  | Jest                        |
+| `libs/shared/contracts` | `@org/contracts`        | Message patterns, payload & entity types                                   | Jest                        |
+| `libs/api/core`         | `@org/api-core`         | Generic CRUD: repository, service, controllers, error mapping              | Jest                        |
 
 Tooling: TypeScript 6 (project references), ESLint 9 flat config with `@nx/enforce-module-boundaries`, Prettier, Husky + lint-staged, GitHub Actions CI, Docker and docker-compose.
 
@@ -41,7 +92,7 @@ Requires Node 24 (`nvm use`).
 ```sh
 npm install
 cp .env.example .env   # optional, the defaults work locally
-npm run dev            # web + gateway + both microservices
+npm run dev            # web + gateway + all four microservices
 ```
 
 - Web: http://localhost:4200. Create an account on `/register`; every page shows the signed-in seller's data. `useSession()` holds the signed-in seller and `useCrud('<resource>')` is the client for any gateway CRUD resource.
@@ -107,6 +158,11 @@ After generating:
 - **Configuration through env.** See `.env.example`. Nest apps load `.env` from the working directory. Nuxt reads `NUXT_*` variables at runtime (`NUXT_API_BASE_URL`).
 - **CRUD through `@org/api-core`.** Services extend `CrudService` and put domain rules in its hooks: unique email in `UsersService`, totals and status transitions in `OrdersService`. Throw `notFound` / `badRequest` / `conflict` from services; the gateway's `RpcToHttpExceptionFilter` turns them into the matching HTTP status.
 - **Money is integer centavos** (₱1.00 = `100`).
+- **Web UI is [Nuxt UI](https://ui.nuxt.com) v4** (Tailwind v4, Lucide icons, emerald on zinc, light and dark). Build pages from the shared pieces in `apps/web/app`:
+  - `PagePanel` (navbar title, `#actions`, `#toolbar`) inside the `default` layout's sidebar; sign-in pages use the `auth` layout
+  - `OrdersTable`, `StatCard`, `StatusBadge`, `EmptyState`, `MoneyInput`
+  - forms are `UForm` with a Zod schema from `utils/schemas.ts` (field text in, gateway payload out, limits from `@org/contracts`) and `:validate-on="FORM_VALIDATE_ON"`
+  - `useApiAction()` runs a request and reports it as a toast; `useConfirm()` asks in a modal
 - **Data is in-memory.** Each service has an `XRepository extends InMemoryRepository<X>`. To add a database, implement `Repository<X>` and swap that class. The services stay unchanged.
 
 ## Security
