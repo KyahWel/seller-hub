@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import type { RegisterPayload } from '@org/contracts';
 
+definePageMeta({ layout: 'auth' });
 useHead({ title: 'Create account' });
 
 const route = useRoute();
 const { register } = useSession();
-const pending = ref(false);
+const loading = ref(false);
 const submitError = ref<string | null>(null);
 
 async function onSubmit(payload: RegisterPayload) {
-  pending.value = true;
+  loading.value = true;
   submitError.value = null;
   try {
     await register(payload);
@@ -20,28 +21,29 @@ async function onSubmit(payload: RegisterPayload) {
       'Could not create the account. Is the API running?',
     );
   } finally {
-    pending.value = false;
+    loading.value = false;
   }
 }
 </script>
 
 <template>
-  <section class="page auth">
-    <h1>Create your account</h1>
-    <div class="card">
-      <AuthForm mode="register" :pending="pending" @submit="onSubmit" />
-    </div>
-    <p v-if="submitError" class="error" role="alert">{{ submitError }}</p>
-    <p class="muted">
+  <AuthForm mode="register" :loading="loading" @submit="onSubmit">
+    <template v-if="submitError" #validation>
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-lucide-circle-alert"
+        :title="submitError"
+      />
+    </template>
+    <template #footer>
       Already have an account?
-      <NuxtLink :to="{ path: '/login', query: route.query }">Sign in</NuxtLink>
-    </p>
-  </section>
+      <ULink
+        :to="{ path: '/login', query: route.query }"
+        class="font-medium text-primary"
+      >
+        Sign in
+      </ULink>
+    </template>
+  </AuthForm>
 </template>
-
-<style scoped>
-.auth {
-  max-width: 24rem;
-  margin: 2rem auto 0;
-}
-</style>

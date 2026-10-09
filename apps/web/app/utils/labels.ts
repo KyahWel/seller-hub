@@ -25,3 +25,25 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: 'Bank transfer',
   other: 'Other',
 };
+
+/** Badge colour per status: in progress, done, or lost. */
+export const ORDER_STATUS_COLORS: Record<
+  OrderStatus,
+  'warning' | 'info' | 'primary' | 'success' | 'error' | 'neutral'
+> = {
+  pending: 'warning',
+  confirmed: 'info',
+  shipped: 'primary',
+  delivered: 'success',
+  returned: 'error',
+  cancelled: 'neutral',
+};
+
+export const CHANNEL_ICONS: Record<SalesChannel, string> = {
+  facebook: 'i-lucide-facebook',
+  instagram: 'i-lucide-instagram',
+  tiktok: 'i-lucide-music-2',
+  shopee: 'i-lucide-shopping-cart',
+  lazada: 'i-lucide-shopping-basket',
+  other: 'i-lucide-globe',
+};

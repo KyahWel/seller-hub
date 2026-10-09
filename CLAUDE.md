@@ -9,4 +9,5 @@ Nx monorepo (npm workspaces): Nuxt 4 app (`apps/web`), NestJS API gateway (`apps
 - Cross-service messages: define the pattern constant and payload types in `@org/contracts` first. Never use string literals.
 - In Nest controllers, import interface types used in decorated signatures with `import type` (`isolatedModules` + `emitDecoratorMetadata`).
 - `apps/web` is excluded from the `@nx/js/typescript` plugin. Its typecheck is `nuxt typecheck`, and its tsconfig comes from Nuxt's generated `.nuxt/tsconfig.*.json`.
+- Web UI: Nuxt UI v4 components. Pages wrap their content in `PagePanel`; forms use `UForm` + a Zod schema in `apps/web/app/utils/schemas.ts` with `:validate-on="FORM_VALIDATE_ON"`; report API results with `useApiAction()` and confirm destructive actions with `useConfirm()`. Input limits shared with the gateway live in `@org/contracts` (`limits.ts`).
 - Unit tests: Jest (`*.spec.ts` next to sources) for Nest and libs; Vitest with `@nuxt/test-utils` (`mountSuspended`) for web.

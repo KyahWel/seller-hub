@@ -1,75 +1,92 @@
 <script setup lang="ts">
-import type { UpdateBuyerPayload } from '@org/contracts';
+import type { FormSubmitEvent } from '@nuxt/ui';
+import type { Buyer } from '@org/contracts';
+import {
+  buyerSchema,
+  type BuyerFormState,
+  type BuyerFormValue,
+} from '~/utils/schemas';
 
-export type BuyerFormValue = Required<
-  Pick<UpdateBuyerPayload, 'name' | 'phone'>
-> &
-  Pick<UpdateBuyerPayload, 'address' | 'notes'>;
+const props = defineProps<{
+  initial?: Buyer;
+  submitLabel?: string;
+  loading?: boolean;
+}>();
+const emit = defineEmits<{ submit: [value: BuyerFormValue]; cancel: [] }>();
 
-/** Philippine mobile number, same rule as the gateway. */
-const PH_MOBILE = /^(09|\+639)\d{9}$/;
+const state = reactive<BuyerFormState>({
+  name: props.initial?.name ?? '',
+  phone: props.initial?.phone ?? '',
+  address: props.initial?.address ?? '',
+  notes: props.initial?.notes ?? '',
+});
 
-const emit = defineEmits<{ submit: [value: BuyerFormValue] }>();
-
-const name = ref('');
-const phone = ref('');
-const address = ref('');
-const notes = ref('');
-
-const phoneValid = computed(() => PH_MOBILE.test(phone.value.trim()));
-const canSubmit = computed(
-  () => name.value.trim().length > 0 && phoneValid.value,
-);
-
-function onSubmit() {
-  if (!canSubmit.value) return;
-  emit('submit', {
-    name: name.value.trim(),
-    phone: phone.value.trim(),
-    address: address.value.trim() || undefined,
-    notes: notes.value.trim() || undefined,
-  });
-  name.value = '';
-  phone.value = '';
-  address.value = '';
-  notes.value = '';
+function onSubmit(event: FormSubmitEvent<BuyerFormValue>) {
+  emit('submit', event.data);
 }
 </script>
 
 <template>
-  <form class="form" @submit.prevent="onSubmit">
-    <div class="form-row">
-      <label class="field">
-        Name
-        <input v-model="name" name="name" required autocomplete="off" />
-      </label>
-      <label class="field">
-        Mobile number
-        <input
-          v-model="phone"
-          name="phone"
-          type="tel"
-          inputmode="tel"
-          placeholder="09171234567"
-          required
-        />
-        <span v-if="phone && !phoneValid" class="error">
-          Use 09XXXXXXXXX or +639XXXXXXXXX
-        </span>
-      </label>
+  <UForm
+    :schema="buyerSchema"
+    :state="state"
+    :validate-on="FORM_VALIDATE_ON"
+    class="space-y-5"
+    @submit="onSubmit"
+  >
+    <UFormField label="Name" name="name" required>
+      <UInput
+        v-model="state.name"
+        placeholder="Juan dela Cruz"
+        autocomplete="off"
+        class="w-full"
+      />
+    </UFormField>
+
+    <UFormField label="Mobile number" name="phone" required>
+      <UInput
+        v-model="state.phone"
+        type="tel"
+        inputmode="tel"
+        placeholder="09171234567"
+        icon="i-lucide-phone"
+        class="w-full"
+      />
+    </UFormField>
+
+    <UFormField label="Delivery address" name="address" hint="Optional">
+      <UTextarea
+        v-model="state.address"
+        :rows="2"
+        autoresize
+        placeholder="House no., street, barangay, city"
+        class="w-full"
+      />
+    </UFormField>
+
+    <UFormField label="Notes" name="notes" hint="Optional">
+      <UTextarea
+        v-model="state.notes"
+        :rows="2"
+        autoresize
+        placeholder="e.g. Prefers delivery after 5pm"
+        class="w-full"
+      />
+    </UFormField>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <UButton
+        v-if="initial"
+        label="Cancel"
+        color="neutral"
+        variant="outline"
+        @click="emit('cancel')"
+      />
+      <UButton
+        type="submit"
+        :label="submitLabel ?? 'Add buyer'"
+        :loading="loading"
+      />
     </div>
-    <label class="field">
-      Address <span class="muted">(optional)</span>
-      <input v-model="address" name="address" />
-    </label>
-    <label class="field">
-      Notes <span class="muted">(optional)</span>
-      <input v-model="notes" name="notes" />
-    </label>
-    <div>
-      <button type="submit" class="btn" :disabled="!canSubmit">
-        Add buyer
-      </button>
-    </div>
-  </form>
+  </UForm>
 </template>

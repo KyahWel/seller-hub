@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import type { RegisterPayload } from '@org/contracts';
 
+definePageMeta({ layout: 'auth' });
 useHead({ title: 'Sign in' });
 
 const route = useRoute();
 const { login } = useSession();
-const pending = ref(false);
+const loading = ref(false);
 const submitError = ref<string | null>(null);
 
 async function onSubmit({ email, password }: RegisterPayload) {
-  pending.value = true;
+  loading.value = true;
   submitError.value = null;
   try {
     await login({ email, password });
@@ -20,30 +21,29 @@ async function onSubmit({ email, password }: RegisterPayload) {
       'Could not sign in. Is the API running?',
     );
   } finally {
-    pending.value = false;
+    loading.value = false;
   }
 }
 </script>
 
 <template>
-  <section class="page auth">
-    <h1>Sign in</h1>
-    <div class="card">
-      <AuthForm mode="login" :pending="pending" @submit="onSubmit" />
-    </div>
-    <p v-if="submitError" class="error" role="alert">{{ submitError }}</p>
-    <p class="muted">
+  <AuthForm mode="login" :loading="loading" @submit="onSubmit">
+    <template v-if="submitError" #validation>
+      <UAlert
+        color="error"
+        variant="subtle"
+        icon="i-lucide-circle-alert"
+        :title="submitError"
+      />
+    </template>
+    <template #footer>
       New to Seller Hub?
-      <NuxtLink :to="{ path: '/register', query: route.query }">
+      <ULink
+        :to="{ path: '/register', query: route.query }"
+        class="font-medium text-primary"
+      >
         Create an account
-      </NuxtLink>
-    </p>
-  </section>
+      </ULink>
+    </template>
+  </AuthForm>
 </template>
-
-<style scoped>
-.auth {
-  max-width: 24rem;
-  margin: 2rem auto 0;
-}
-</style>

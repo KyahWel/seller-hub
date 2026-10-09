@@ -1,11 +1,6 @@
 <script setup lang="ts">
-import {
-  ORDER_STATUSES,
-  type CreateOrderPayload,
-  type Order,
-  type OrderStatus,
-  type UpdateOrderPayload,
-} from '@org/contracts';
+import type { TabsItem } from '@nuxt/ui';
+import { ORDER_STATUSES, type Order, type OrderStatus } from '@org/contracts';
 
 useHead({ title: 'Orders' });
 
@@ -20,22 +15,28 @@ const status = computed(() => {
 });
 const page = computed(() => Math.max(1, Number(route.query.page) || 1));
 
-const orders = useCrud<Order, CreateOrderPayload, UpdateOrderPayload>(
-  'orders',
-  () => ({
-    status: status.value,
-    page: page.value,
-  }),
-);
+const orders = useCrud<Order, never, never>('orders', () => ({
+  status: status.value,
+  page: page.value,
+}));
 
-const pageCount = computed(() => {
-  const { total, limit } = orders.page.value;
-  return limit ? Math.max(1, Math.ceil(total / limit)) : 1;
+const tabs: TabsItem[] = [
+  { label: 'All', value: 'all' },
+  ...ORDER_STATUSES.map((s) => ({ label: ORDER_STATUS_LABELS[s], value: s })),
+];
+
+// The filter and page live in the URL, so they survive reloads and links.
+const activeTab = computed({
+  get: () => status.value ?? 'all',
+  set: (value: string | number) =>
+    router.push({
+      query: {
+        ...route.query,
+        status: value === 'all' ? undefined : String(value),
+        page: undefined,
+      },
+    }),
 });
-
-function setStatus(value?: OrderStatus) {
-  router.push({ query: { ...route.query, status: value, page: undefined } });
-}
 
 function goToPage(value: number) {
   router.push({ query: { ...route.query, page: value } });
@@ -43,100 +44,78 @@ function goToPage(value: number) {
 </script>
 
 <template>
-  <section class="page">
-    <div class="page-header">
-      <h1>Orders</h1>
-      <NuxtLink to="/orders/new" class="btn">New order</NuxtLink>
-    </div>
+  <PagePanel id="orders" title="Orders">
+    <template #actions>
+      <UButton to="/orders/new" icon="i-lucide-plus" label="New order" />
+    </template>
 
-    <div class="filters" role="group" aria-label="Filter by status">
-      <button
-        type="button"
-        class="chip"
-        :class="{ active: !status }"
-        @click="setStatus()"
-      >
-        All
-      </button>
-      <button
-        v-for="s in ORDER_STATUSES"
-        :key="s"
-        type="button"
-        class="chip"
-        :class="{ active: status === s }"
-        @click="setStatus(s)"
-      >
-        {{ ORDER_STATUS_LABELS[s] }}
-      </button>
-    </div>
+    <template #toolbar>
+      <USelect
+        v-model="activeTab"
+        :items="tabs"
+        icon="i-lucide-filter"
+        class="w-full sm:hidden"
+        aria-label="Filter by status"
+      />
+      <UTabs
+        v-model="activeTab"
+        :items="tabs"
+        :content="false"
+        variant="link"
+        size="sm"
+        class="-mb-px hidden sm:flex"
+      />
+    </template>
 
-    <p v-if="orders.status.value === 'pending'">Loading…</p>
-    <p v-else-if="orders.error.value" class="error" role="alert">
-      Could not load orders. Is the API running?
-    </p>
-    <p v-else-if="orders.items.value.length === 0" class="muted">
-      No orders{{
-        status ? ` with status ${ORDER_STATUS_LABELS[status]}` : ''
-      }}.
-    </p>
-    <ul v-else class="list">
-      <li v-for="order in orders.items.value" :key="order.id">
-        <OrderCard :order="order" />
-      </li>
-    </ul>
+    <UAlert
+      v-if="orders.error.value"
+      color="error"
+      variant="subtle"
+      icon="i-lucide-circle-alert"
+      title="Could not load orders"
+      description="Check that the API is running, then refresh."
+    />
 
-    <div v-if="pageCount > 1" class="pager">
-      <button
-        type="button"
-        class="btn btn-secondary btn-sm"
-        :disabled="page <= 1"
-        @click="goToPage(page - 1)"
-      >
-        Previous
-      </button>
-      <span class="muted">Page {{ page }} of {{ pageCount }}</span>
-      <button
-        type="button"
-        class="btn btn-secondary btn-sm"
-        :disabled="page >= pageCount"
-        @click="goToPage(page + 1)"
-      >
-        Next
-      </button>
+    <OrdersTable
+      v-else
+      :orders="orders.items.value"
+      :loading="orders.status.value === 'pending'"
+    >
+      <template #empty>
+        <EmptyState
+          v-if="status"
+          icon="i-lucide-filter-x"
+          :title="`No ${ORDER_STATUS_LABELS[status].toLowerCase()} orders`"
+        >
+          <UButton
+            label="Show all orders"
+            color="neutral"
+            variant="outline"
+            @click="activeTab = 'all'"
+          />
+        </EmptyState>
+        <EmptyState
+          v-else
+          icon="i-lucide-shopping-bag"
+          title="No orders yet"
+          description="Record orders from Messenger, Instagram, TikTok or marketplaces."
+        >
+          <UButton to="/orders/new" icon="i-lucide-plus" label="New order" />
+        </EmptyState>
+      </template>
+    </OrdersTable>
+
+    <div
+      v-if="orders.page.value.total > orders.page.value.limit"
+      class="flex items-center justify-between gap-3 border-t border-default pt-4"
+    >
+      <p class="text-sm text-muted">{{ orders.page.value.total }} orders</p>
+      <UPagination
+        :page="page"
+        :total="orders.page.value.total"
+        :items-per-page="orders.page.value.limit"
+        @update:page="goToPage"
+      />
     </div>
-  </section>
+  </PagePanel>
 </template>
-
-<style scoped>
-.filters {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.25rem;
-}
-
-.chip {
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: inherit;
-  font-size: 0.875rem;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.chip.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-weight: 600;
-}
-
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-}
-</style>

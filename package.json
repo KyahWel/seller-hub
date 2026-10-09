@@ -28,18 +28,21 @@
     "libs/api/*"
   ],
   "dependencies": {
+    "@iconify-json/lucide": "~1.2.136",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/microservices": "^11.2.7",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/throttler": "^6.7.1",
+    "@nuxt/ui": "4.11.2",
     "axios": "^1.20.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.3.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "zod": "~4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -98,7 +101,7 @@
     "vite": "^8.0.0",
     "vitest": "~4.1.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0",
+    "vue-router": "~5.3.1",
     "vue-tsc": "^3.3.12",
     "webpack": "^5.101.3",
     "webpack-cli": "^7.0.0",

@@ -1,113 +1,217 @@
 <script setup lang="ts">
-import type {
-  Buyer,
-  CreateBuyerPayload,
-  UpdateBuyerPayload,
-} from '@org/contracts';
-import type { BuyerFormValue } from '~/components/BuyerForm.vue';
+import type { DropdownMenuItem, TableColumn } from '@nuxt/ui';
+import type { Buyer, UpdateBuyerPayload } from '@org/contracts';
+import type { BuyerFormValue } from '~/utils/schemas';
 
 useHead({ title: 'Buyers' });
 
-const phoneSearch = ref('');
-const buyers = useCrud<
-  Buyer,
-  Omit<CreateBuyerPayload, 'sellerId'>,
-  UpdateBuyerPayload
->('buyers', () => ({
-  phone: phoneSearch.value.trim() || undefined,
+const buyers = useCrud<Buyer, BuyerFormValue, UpdateBuyerPayload>('buyers', {
   limit: 100,
-}));
-const actionError = ref<string | null>(null);
+});
+const run = useApiAction();
+const confirm = useConfirm();
 
-async function onCreate(value: BuyerFormValue) {
-  actionError.value = null;
-  try {
-    await buyers.create(value);
-  } catch (error) {
-    actionError.value = apiErrorMessage(error, 'Could not add the buyer.');
-  }
+const search = ref('');
+const filtered = computed(() => {
+  const query = search.value.trim().toLowerCase();
+  if (!query) return buyers.items.value;
+  return buyers.items.value.filter((b) =>
+    [b.name, b.phone].some((text) => text.toLowerCase().includes(query)),
+  );
+});
+
+const editorOpen = ref(false);
+const editing = ref<Buyer | undefined>();
+const saving = ref(false);
+
+function openEditor(buyer?: Buyer) {
+  editing.value = buyer;
+  editorOpen.value = true;
+}
+
+async function onSave(value: BuyerFormValue) {
+  saving.value = true;
+  const buyer = editing.value;
+  const ok = buyer
+    ? await run(() => buyers.update(buyer.id, value), {
+        success: 'Buyer saved',
+        error: 'Could not save the buyer',
+      })
+    : await run(() => buyers.create(value), {
+        success: 'Buyer added',
+        error: 'Could not add the buyer',
+      });
+  saving.value = false;
+  if (ok) editorOpen.value = false;
 }
 
 async function onRemove(buyer: Buyer) {
-  if (!confirm(`Delete ${buyer.name}?`)) return;
-  actionError.value = null;
-  try {
-    await buyers.remove(buyer.id);
-  } catch (error) {
-    actionError.value = apiErrorMessage(error, 'Could not delete the buyer.');
-  }
+  const confirmed = await confirm({
+    title: `Delete ${buyer.name}?`,
+    description: 'Their past orders are kept.',
+    confirmLabel: 'Delete',
+    danger: true,
+  });
+  if (!confirmed) return;
+  await run(() => buyers.remove(buyer.id), {
+    success: 'Buyer deleted',
+    error: 'Could not delete the buyer',
+  });
 }
+
+function rowActions(buyer: Buyer): DropdownMenuItem[] {
+  return [
+    {
+      label: 'Edit',
+      icon: 'i-lucide-pencil',
+      onSelect: () => openEditor(buyer),
+    },
+    {
+      label: 'Delete',
+      icon: 'i-lucide-trash-2',
+      color: 'error',
+      onSelect: () => onRemove(buyer),
+    },
+  ];
+}
+
+const columns: TableColumn<Buyer>[] = [
+  { accessorKey: 'name', header: 'Buyer' },
+  {
+    accessorKey: 'phone',
+    header: 'Mobile',
+    meta: { class: { th: 'hidden sm:table-cell', td: 'hidden sm:table-cell' } },
+  },
+  {
+    accessorKey: 'address',
+    header: 'Address',
+    meta: { class: { th: 'hidden md:table-cell', td: 'hidden md:table-cell' } },
+  },
+  { id: 'actions' },
+];
 </script>
 
 <template>
-  <section class="page">
-    <h1>Buyers</h1>
+  <PagePanel id="buyers" title="Buyers">
+    <template #actions>
+      <UButton icon="i-lucide-plus" label="Add buyer" @click="openEditor()" />
+    </template>
 
-    <div class="card">
-      <BuyerForm @submit="onCreate" />
-    </div>
-    <p v-if="actionError" class="error" role="alert">{{ actionError }}</p>
-
-    <label class="field search">
-      Find by mobile number
-      <input
-        v-model="phoneSearch"
-        type="search"
-        inputmode="tel"
-        placeholder="09171234567"
+    <template #toolbar>
+      <UInput
+        v-model="search"
+        icon="i-lucide-search"
+        placeholder="Search name or mobile…"
+        class="w-full max-w-xs"
       />
-    </label>
+      <p class="ml-auto text-sm text-muted">
+        {{ filtered.length }} of {{ buyers.page.value.total }}
+      </p>
+    </template>
 
-    <p v-if="buyers.status.value === 'pending'">Loading…</p>
-    <p v-else-if="buyers.error.value" class="error" role="alert">
-      Could not load buyers. Is the API running?
-    </p>
-    <p v-else-if="buyers.items.value.length === 0" class="muted">
-      {{ phoneSearch ? 'No buyer with that number.' : 'No buyers yet.' }}
-    </p>
-    <ul v-else class="list">
-      <li
-        v-for="buyer in buyers.items.value"
-        :key="buyer.id"
-        class="card buyer"
-      >
-        <div>
-          <h3>{{ buyer.name }}</h3>
-          <p class="muted">
-            {{ buyer.phone
-            }}<template v-if="buyer.address"> · {{ buyer.address }}</template>
-          </p>
-          <p v-if="buyer.notes" class="notes">{{ buyer.notes }}</p>
+    <UAlert
+      v-if="buyers.error.value"
+      color="error"
+      variant="subtle"
+      icon="i-lucide-circle-alert"
+      title="Could not load buyers"
+      description="Check that the API is running, then refresh."
+    />
+
+    <UTable
+      v-else
+      :data="filtered"
+      :columns="columns"
+      :loading="buyers.status.value === 'pending'"
+    >
+      <template #name-cell="{ row }">
+        <div class="flex items-center gap-3">
+          <UAvatar :alt="row.original.name" size="sm" />
+          <div class="min-w-0">
+            <p class="font-medium text-highlighted">{{ row.original.name }}</p>
+            <p class="text-xs text-muted tabular-nums sm:hidden">
+              {{ row.original.phone }}
+            </p>
+            <p
+              v-if="row.original.notes"
+              class="max-w-xs truncate text-xs text-muted"
+            >
+              {{ row.original.notes }}
+            </p>
+          </div>
         </div>
-        <button
-          type="button"
-          class="btn btn-danger btn-sm"
-          @click="onRemove(buyer)"
+      </template>
+      <template #phone-cell="{ row }">
+        <a
+          :href="`tel:${row.original.phone}`"
+          class="tabular-nums hover:underline"
         >
-          Delete
-        </button>
-      </li>
-    </ul>
-  </section>
+          {{ row.original.phone }}
+        </a>
+      </template>
+      <template #address-cell="{ row }">
+        <span
+          v-if="row.original.address"
+          class="block max-w-xs truncate text-muted"
+        >
+          {{ row.original.address }}
+        </span>
+        <span v-else class="text-dimmed">—</span>
+      </template>
+      <template #actions-cell="{ row }">
+        <div class="text-right">
+          <UDropdownMenu
+            :items="rowActions(row.original)"
+            :content="{ align: 'end' }"
+          >
+            <UButton
+              icon="i-lucide-ellipsis-vertical"
+              color="neutral"
+              variant="ghost"
+              :aria-label="`Actions for ${row.original.name}`"
+            />
+          </UDropdownMenu>
+        </div>
+      </template>
+      <template #empty>
+        <EmptyState
+          v-if="search"
+          icon="i-lucide-search-x"
+          title="No matching buyers"
+          :description="`Nothing matches “${search}”.`"
+        />
+        <EmptyState
+          v-else
+          icon="i-lucide-users"
+          title="No buyers yet"
+          description="Save buyers to reuse their details and spot repeat customers."
+        >
+          <UButton
+            icon="i-lucide-plus"
+            label="Add buyer"
+            @click="openEditor()"
+          />
+        </EmptyState>
+      </template>
+    </UTable>
+
+    <USlideover
+      v-model:open="editorOpen"
+      :title="editing ? 'Edit buyer' : 'Add buyer'"
+      :description="
+        editing ? editing.name : 'Saved buyers can be picked on new orders.'
+      "
+    >
+      <template #body>
+        <BuyerForm
+          :key="editing?.id ?? 'new'"
+          :initial="editing"
+          :submit-label="editing ? 'Save changes' : 'Add buyer'"
+          :loading="saving"
+          @submit="onSave"
+          @cancel="editorOpen = false"
+        />
+      </template>
+    </USlideover>
+  </PagePanel>
 </template>
-
-<style scoped>
-.search {
-  max-width: 20rem;
-}
-
-.buyer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-h3 {
-  font-weight: 600;
-}
-
-.notes {
-  font-size: 0.875rem;
-}
-</style>

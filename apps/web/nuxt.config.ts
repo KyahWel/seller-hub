@@ -4,6 +4,11 @@ import { defineNuxtConfig } from 'nuxt/config';
 export default defineNuxtConfig({
   compatibilityDate: '2026-10-01',
   workspaceDir: '../../',
+  modules: ['@nuxt/ui'],
+  icon: {
+    // Keep /api/** for the gateway proxy (server/api/[...path].ts).
+    localApiEndpoint: '/_nuxt_icon',
+  },
   devtools: { enabled: true },
   devServer: {
     host: 'localhost',
@@ -39,7 +44,7 @@ export default defineNuxtConfig({
       },
     },
   },
-  css: ['~/assets/css/styles.css'],
+  css: ['~/assets/css/main.css'],
   $production: {
     routeRules: {
       // Browsers only honour this over HTTPS; production must be served over HTTPS.

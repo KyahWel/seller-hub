@@ -1,6 +1,8 @@
-import type {
-  CreateProductPayload,
-  UpdateProductPayload,
+import {
+  type CreateProductPayload,
+  MAX_AMOUNT,
+  MAX_QUANTITY,
+  type UpdateProductPayload,
 } from '@org/contracts';
 import {
   IsInt,
@@ -11,7 +13,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { MAX_AMOUNT, MAX_QUANTITY } from '../common/limits';
 
 /** Amounts are integer centavos. */
 export class UpdateProductDto implements UpdateProductPayload {

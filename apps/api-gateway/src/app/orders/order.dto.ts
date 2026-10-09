@@ -1,5 +1,8 @@
 import {
   ORDER_STATUSES,
+  MAX_AMOUNT,
+  MAX_ITEMS_PER_ORDER,
+  MAX_QUANTITY,
   PAYMENT_METHODS,
   SALES_CHANNELS,
   type CreateOrderPayload,
@@ -24,11 +27,6 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import {
-  MAX_AMOUNT,
-  MAX_ITEMS_PER_ORDER,
-  MAX_QUANTITY,
-} from '../common/limits';
 
 /** Amounts are integer centavos. */
 export class OrderItemDto implements OrderItem {
