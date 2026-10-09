@@ -8,9 +8,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
+import { MAX_AMOUNT, MAX_QUANTITY } from '../common/limits';
 
 /** Amounts are integer centavos. */
 export class UpdateProductDto implements UpdateProductPayload {
@@ -28,16 +30,19 @@ export class UpdateProductDto implements UpdateProductPayload {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_AMOUNT)
   price?: number;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_AMOUNT)
   cost?: number;
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_QUANTITY)
   stock?: number;
 }
 
@@ -55,5 +60,6 @@ export class CreateProductDto
 
   @IsInt()
   @Min(0)
+  @Max(MAX_AMOUNT)
   declare price: number;
 }

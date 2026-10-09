@@ -19,8 +19,8 @@ import type {
   Paginated,
   UpdatePayload,
 } from '@org/contracts';
-import { firstValueFrom } from 'rxjs';
 import { ListQueryDto } from './list-query.dto.js';
+import { sendRpc } from './send-rpc.js';
 
 export interface CrudHttpControllerOptions<T extends BaseEntity> {
   patterns: CrudPatterns;
@@ -120,7 +120,7 @@ export function CrudHttpController<T extends BaseEntity, C, U>(
     }
 
     private send<R, P>(pattern: string, payload: P): Promise<R> {
-      return firstValueFrom(this.client.send<R, P>(pattern, payload));
+      return sendRpc<R, P>(this.client, pattern, payload);
     }
   }
   return CrudHttpControllerBase;

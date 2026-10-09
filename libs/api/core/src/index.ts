@@ -5,6 +5,7 @@ export * from './lib/crud/crud.service.js';
 export * from './lib/crud/crud-message.controller.js';
 export * from './lib/microservice/bootstrap-microservice.js';
 export * from './lib/gateway/service-client.js';
+export * from './lib/gateway/send-rpc.js';
 export * from './lib/gateway/list-query.dto.js';
 export * from './lib/gateway/crud-http.controller.js';
 export * from './lib/gateway/rpc-to-http-exception.filter.js';

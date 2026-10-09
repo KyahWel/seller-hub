@@ -11,6 +11,7 @@ import {
 } from '@org/contracts';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   ArrayMinSize,
   IsIn,
   IsInt,
@@ -18,10 +19,16 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+import {
+  MAX_AMOUNT,
+  MAX_ITEMS_PER_ORDER,
+  MAX_QUANTITY,
+} from '../common/limits';
 
 /** Amounts are integer centavos. */
 export class OrderItemDto implements OrderItem {
@@ -36,10 +43,12 @@ export class OrderItemDto implements OrderItem {
 
   @IsInt()
   @Min(1)
+  @Max(MAX_QUANTITY)
   quantity!: number;
 
   @IsInt()
   @Min(0)
+  @Max(MAX_AMOUNT)
   unitPrice!: number;
 }
 
@@ -59,12 +68,14 @@ export class CreateOrderDto implements CreateOrderPayload {
 
   @ValidateNested({ each: true })
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_ITEMS_PER_ORDER)
   @Type(() => OrderItemDto)
   items!: OrderItemDto[];
 
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(MAX_AMOUNT)
   shippingFee?: number;
 
   @IsOptional()

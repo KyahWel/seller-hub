@@ -1,4 +1,9 @@
-import { type ArgumentsHost, Catch, HttpException } from '@nestjs/common';
+import {
+  type ArgumentsHost,
+  Catch,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { isRpcErrorBody } from '../errors/rpc-errors.js';
 
@@ -13,10 +18,15 @@ import { isRpcErrorBody } from '../errors/rpc-errors.js';
 export class RpcToHttpExceptionFilter extends BaseExceptionFilter {
   override catch(exception: unknown, host: ArgumentsHost) {
     if (isRpcErrorBody(exception)) {
-      return super.catch(
-        new HttpException(exception, exception.statusCode),
-        host,
-      );
+      // Server-side failures keep a generic message so internals don't leak.
+      const body =
+        exception.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR
+          ? {
+              statusCode: exception.statusCode,
+              message: 'Internal server error',
+            }
+          : { statusCode: exception.statusCode, message: exception.message };
+      return super.catch(new HttpException(body, exception.statusCode), host);
     }
     return super.catch(exception, host);
   }

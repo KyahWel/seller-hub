@@ -76,10 +76,12 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/microservices": "^11.2.7",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/throttler": "^6.7.1",
     "@org/api-core": "*",
     "@org/contracts": "*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "helmet": "^8.3.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "tslib": "^2.3.0"

@@ -8,6 +8,7 @@ export function useActiveSeller() {
   const sellerId = useCookie<string | null>('sellerId', {
     default: () => null,
     sameSite: 'lax',
+    secure: !import.meta.dev,
     maxAge: 60 * 60 * 24 * 365,
   });
 

@@ -20,11 +20,18 @@ export const badRequest = (message: string) =>
 export const conflict = (message: string) =>
   rpcError(HttpStatus.CONFLICT, message);
 
+/**
+ * True for `{ statusCode, message }` with a 4xx/5xx status. Anything else
+ * coming back from a service is treated as an unknown error (500), so a
+ * malformed reply cannot pick an arbitrary status such as a redirect.
+ */
 export function isRpcErrorBody(value: unknown): value is RpcErrorBody {
+  if (typeof value !== 'object' || value === null) return false;
+  const { statusCode, message } = value as Partial<RpcErrorBody>;
   return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as RpcErrorBody).statusCode === 'number' &&
-    typeof (value as RpcErrorBody).message === 'string'
+    Number.isInteger(statusCode) &&
+    (statusCode as number) >= 400 &&
+    (statusCode as number) <= 599 &&
+    typeof message === 'string'
   );
 }

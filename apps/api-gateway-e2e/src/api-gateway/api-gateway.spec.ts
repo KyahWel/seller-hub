@@ -112,3 +112,49 @@ describe('API gateway', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('security', () => {
+  it('sends security headers and hides the framework', async () => {
+    const res = await axios.get('/api/health');
+
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
+  it('rejects unknown fields instead of ignoring them', async () => {
+    const res = await axios.post(
+      '/api/users',
+      { name: 'Eve', email: `eve+${Date.now()}@example.com`, isAdmin: true },
+      noThrow,
+    );
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects amounts that could overflow totals', async () => {
+    const res = await axios.post(
+      '/api/orders',
+      {
+        sellerId: '6f1c1b8e-1f0e-4c1a-9a43-2a4e4a1c0b11',
+        channel: 'facebook',
+        paymentMethod: 'cod',
+        items: [
+          { name: 'x', quantity: 10_000, unitPrice: Number.MAX_SAFE_INTEGER },
+        ],
+      },
+      noThrow,
+    );
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects oversized bodies', async () => {
+    const res = await axios.post(
+      '/api/users',
+      { name: 'x'.repeat(200_000), email: 'big@example.com' },
+      noThrow,
+    );
+
+    expect(res.status).toBe(413);
+  });
+});

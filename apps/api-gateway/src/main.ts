@@ -1,7 +1,9 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { RpcToHttpExceptionFilter } from '@org/api-core';
+import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 
 // Load `.env` from the working directory when present (no-op otherwise).
@@ -12,15 +14,29 @@ try {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   const config = app.get(ConfigService);
+
+  // Which proxies may set X-Forwarded-For. The client IP drives rate
+  // limiting, so only trust hops you control (the Nuxt server, a load balancer).
+  app.set('trust proxy', config.get<string>('TRUST_PROXY', 'loopback'));
+  app.use(helmet());
+  app.useBodyParser('json', { limit: config.get('BODY_LIMIT', '100kb') });
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   app.enableCors({
     origin: config.get<string>('CORS_ORIGIN', 'http://localhost:4200'),
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(
     new RpcToHttpExceptionFilter(app.get(HttpAdapterHost).httpAdapter),
   );

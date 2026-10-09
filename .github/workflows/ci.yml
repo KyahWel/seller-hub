@@ -33,6 +33,9 @@ jobs:
 
       - run: npm ci
 
+      # Fail on high/critical advisories in the packages that ship to production.
+      - run: npm audit --omit=dev --audit-level=high
+
       # Sets NX_BASE / NX_HEAD so `nx affected` only runs what changed.
       - uses: nrwl/nx-set-shas@v4
 

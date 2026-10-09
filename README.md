@@ -1,4 +1,6 @@
-# Monorepo Template
+# Seller Hub
+
+Order, product and buyer management for Filipino online sellers (Facebook, Instagram, TikTok, Shopee, Lazada).
 
 A TypeScript monorepo built with [Nx](https://nx.dev). It has a **Nuxt 4** frontend, a **NestJS 11** API gateway and NestJS **microservices**. All apps share types through a workspace library.
 
@@ -103,6 +105,23 @@ After generating:
 - **CRUD through `@org/api-core`.** Services extend `CrudService` and put domain rules in its hooks: unique email in `UsersService`, totals and status transitions in `OrdersService`. Throw `notFound` / `badRequest` / `conflict` from services; the gateway's `RpcToHttpExceptionFilter` turns them into the matching HTTP status.
 - **Money is integer centavos** (₱1.00 = `100`).
 - **Data is in-memory.** Each service has an `XRepository extends InMemoryRepository<X>`. To add a database, implement `Repository<X>` and swap that class. The services stay unchanged.
+
+## Security
+
+What is in place, and what is not yet:
+
+| Layer              | Measure                                                                                                                                                                             |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gateway            | `helmet` security headers, `x-powered-by` removed                                                                                                                                   |
+| Gateway            | Rate limit per client IP (`THROTTLE_LIMIT` per `THROTTLE_TTL_MS`, default 120/min), health check exempt                                                                             |
+| Gateway            | JSON bodies capped at `BODY_LIMIT` (100kb), unknown fields rejected (`forbidNonWhitelisted`), upper bounds on quantities, amounts and items per order                               |
+| Gateway → services | `sendRpc` times out after 5s (504) and reports unreachable services as 503; 5xx details from services are never sent to clients                                                     |
+| Services           | Bind to `127.0.0.1` by default. The TCP transport has **no authentication**: in Docker they listen on the private network with no published ports. Never expose 3001–3004 publicly  |
+| Web                | Clickjacking protection (`frame-ancestors 'none'`, `X-Frame-Options`), `nosniff`, referrer and permissions policies, HSTS in production builds                                      |
+| Web → gateway      | The `/api` proxy overwrites `X-Forwarded-For` with the real client address, so the rate limit cannot be dodged by spoofing it (production builds; `nuxt dev` does not enforce this) |
+| Supply chain       | CI fails on high/critical advisories in production dependencies (`npm audit --omit=dev`); Dependabot opens weekly update PRs                                                        |
+
+**Not yet covered:** authentication and per-seller authorization. Until login exists, anyone who can reach the app can read and change every seller's data, so do not deploy it publicly with real data. Also planned: encrypted service-to-service traffic (TLS or a service mesh) if services ever run on separate hosts, and a full Content Security Policy (script nonces via `nuxt-security`).
 
 ## Docker
 

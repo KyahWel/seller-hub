@@ -25,6 +25,27 @@ describe('RpcToHttpExceptionFilter', () => {
     expect((mapped as HttpException).getStatus()).toBe(404);
   });
 
+  it('hides the message of 5xx service errors', () => {
+    new RpcToHttpExceptionFilter().catch(
+      { statusCode: 500, message: 'db password rejected' },
+      host,
+    );
+
+    const [mapped] = parentCatch.mock.calls[0];
+    expect((mapped as HttpException).getResponse()).toEqual({
+      statusCode: 500,
+      message: 'Internal server error',
+    });
+  });
+
+  it('does not trust a non-error status from a service', () => {
+    const exception = { statusCode: 302, message: 'redirect' };
+
+    new RpcToHttpExceptionFilter().catch(exception, host);
+
+    expect(parentCatch).toHaveBeenCalledWith(exception, host);
+  });
+
   it('passes other errors through unchanged', () => {
     const error = new Error('boom');
 

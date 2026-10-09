@@ -10,6 +10,11 @@ import {
 /**
  * Starts a TCP microservice for `service`, reading its host/port from
  * `<SERVICE>_HOST` / `<SERVICE>_PORT` and loading `.env` when present.
+ *
+ * Binds to localhost unless `<SERVICE>_HOST` says otherwise: the TCP
+ * transport has no authentication, so services must only be reachable from
+ * the gateway (e.g. a private Docker network with `<SERVICE>_HOST=0.0.0.0`
+ * and no published ports).
  */
 export async function bootstrapMicroservice(
   appModule: Type,
@@ -22,7 +27,7 @@ export async function bootstrapMicroservice(
   }
 
   const { host, port } = resolveServiceAddress(service, {
-    host: '0.0.0.0',
+    host: '127.0.0.1',
     port: DEFAULT_SERVICE_PORTS[service],
   });
 
