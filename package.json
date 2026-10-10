@@ -83,7 +83,7 @@
     "h3": "^1.8.2",
     "happy-dom": "^20.14.5",
     "husky": "^9.1.7",
-    "jest": "~30.3.0",
+    "jest": "~30.5.2",
     "jest-environment-node": "~30.3.0",
     "jest-util": "~30.3.0",
     "jsdom": "^27.1.0",
