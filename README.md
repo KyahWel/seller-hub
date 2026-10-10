@@ -89,10 +89,10 @@ Tooling: TypeScript 6 (project references), ESLint 9 flat config with `@nx/enfor
 Requires Node 24 (`nvm use`).
 
 ```sh
-npm install
-cp .env.example .env   # optional, the defaults work locally
-npm run dev            # web + gateway + all four microservices
+scripts/dev.sh         # web + gateway + all four microservices
 ```
+
+`scripts/dev.sh` checks your Node version, runs `npm install` when the lockfile changed, creates `.env` from `.env.example` if missing, and stops early if a port it needs (4200, 3000–3004) is taken. `scripts/dev.sh api` starts only the gateway and services; `scripts/dev.sh web` starts only the web app. It wraps `npm run dev`, which you can also run directly after `npm install`.
 
 - Web: http://localhost:4200. Create an account on `/register`; every page shows the signed-in seller's data. `useSession()` holds the signed-in seller and `useCrud('<resource>')` is the client for any gateway CRUD resource.
 - API: http://localhost:3000/api
@@ -121,6 +121,16 @@ Run only part of the stack with `npm run start:api` or `npm run start:web`, or s
 | `npx nx show project @org/web` | List a project's targets                         |
 
 Nx caches task results, so a second run of an unchanged task is instant.
+
+### Check everything before you push
+
+```sh
+scripts/check.sh           # deps, format, lint, test, build, typecheck, e2e
+scripts/check.sh --quick   # only projects changed vs main, no e2e
+scripts/check.sh --fix     # format the code instead of only checking it
+```
+
+It runs the same checks as CI, plus dependency health: `npm ls` (installed tree matches `package.json`), `npm audit --omit=dev --audit-level=high` (fails on serious advisories in production dependencies), a count of advisories across all dependencies, and a table of outdated packages with major updates flagged. The last two are informational. It ends with a pass/fail summary and exits non-zero if a blocking check failed.
 
 ### Tests never call a real API
 
