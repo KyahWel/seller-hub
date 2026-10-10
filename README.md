@@ -70,18 +70,17 @@ A TypeScript monorepo built with [Nx](https://nx.dev): a **Nuxt 4** web app usin
 
 ## What's inside
 
-| Path                    | Project                 | Stack                                                                      | Tests                       |
-| ----------------------- | ----------------------- | -------------------------------------------------------------------------- | --------------------------- |
-| `apps/web`              | `@org/web`              | Nuxt 4 + Nuxt UI seller dashboard (orders, products, buyers), `/api` proxy | Vitest + `@nuxt/test-utils` |
-| `apps/web-e2e`          | `@org/web-e2e`          | Playwright                                                                 | e2e                         |
-| `apps/api-gateway`      | `@org/api-gateway`      | NestJS HTTP, validation, TCP clients                                       | Jest                        |
-| `apps/api-gateway-e2e`  | `@org/api-gateway-e2e`  | Jest + axios against the running stack                                     | e2e                         |
-| `apps/users-service`    | `@org/users-service`    | NestJS microservice (TCP)                                                  | Jest                        |
-| `apps/orders-service`   | `@org/orders-service`   | NestJS microservice (TCP)                                                  | Jest                        |
-| `apps/products-service` | `@org/products-service` | NestJS microservice (TCP)                                                  | Jest                        |
-| `apps/buyers-service`   | `@org/buyers-service`   | NestJS microservice (TCP)                                                  | Jest                        |
-| `libs/shared/contracts` | `@org/contracts`        | Message patterns, payload & entity types                                   | Jest                        |
-| `libs/api/core`         | `@org/api-core`         | Generic CRUD: repository, service, controllers, error mapping              | Jest                        |
+| Path                    | Project                 | Stack                                                                      | Tests                                        |
+| ----------------------- | ----------------------- | -------------------------------------------------------------------------- | -------------------------------------------- |
+| `apps/web`              | `@org/web`              | Nuxt 4 + Nuxt UI seller dashboard (orders, products, buyers), `/api` proxy | Vitest + `@nuxt/test-utils`                  |
+| `apps/web-e2e`          | `@org/web-e2e`          | Playwright against the production web build and a mock API                 | e2e                                          |
+| `apps/api-gateway`      | `@org/api-gateway`      | NestJS HTTP, validation, TCP clients                                       | Jest (incl. HTTP tests with mocked services) |
+| `apps/users-service`    | `@org/users-service`    | NestJS microservice (TCP)                                                  | Jest                                         |
+| `apps/orders-service`   | `@org/orders-service`   | NestJS microservice (TCP)                                                  | Jest                                         |
+| `apps/products-service` | `@org/products-service` | NestJS microservice (TCP)                                                  | Jest                                         |
+| `apps/buyers-service`   | `@org/buyers-service`   | NestJS microservice (TCP)                                                  | Jest                                         |
+| `libs/shared/contracts` | `@org/contracts`        | Message patterns, payload & entity types                                   | Jest                                         |
+| `libs/api/core`         | `@org/api-core`         | Generic CRUD: repository, service, controllers, error mapping              | Jest                                         |
 
 Tooling: TypeScript 6 (project references), ESLint 9 flat config with `@nx/enforce-module-boundaries`, Prettier, Husky + lint-staged, GitHub Actions CI, Docker and docker-compose.
 
@@ -108,20 +107,26 @@ Run only part of the stack with `npm run start:api` or `npm run start:web`, or s
 
 ## Common commands
 
-| Command                        | What it does                                        |
-| ------------------------------ | --------------------------------------------------- |
-| `npm run dev`                  | Serve everything                                    |
-| `npm run build`                | Build every project                                 |
-| `npm test`                     | Unit tests (Jest for Nest/libs, Vitest for Nuxt)    |
-| `npm run lint`                 | ESLint everywhere                                   |
-| `npm run typecheck`            | `tsc --build` / `nuxt typecheck`                    |
-| `npm run e2e`                  | API e2e (boots all services) and Playwright web e2e |
-| `npm run affected`             | Lint/test/build/typecheck only what changed         |
-| `npm run format`               | Prettier via `nx format`                            |
-| `npm run graph`                | Interactive project graph                           |
-| `npx nx show project @org/web` | List a project's targets                            |
+| Command                        | What it does                                     |
+| ------------------------------ | ------------------------------------------------ |
+| `npm run dev`                  | Serve everything                                 |
+| `npm run build`                | Build every project                              |
+| `npm test`                     | Unit tests (Jest for Nest/libs, Vitest for Nuxt) |
+| `npm run lint`                 | ESLint everywhere                                |
+| `npm run typecheck`            | `tsc --build` / `nuxt typecheck`                 |
+| `npm run e2e`                  | Playwright web e2e against a mock API            |
+| `npm run affected`             | Lint/test/build/typecheck only what changed      |
+| `npm run format`               | Prettier via `nx format`                         |
+| `npm run graph`                | Interactive project graph                        |
+| `npx nx show project @org/web` | List a project's targets                         |
 
 Nx caches task results, so a second run of an unchanged task is instant.
+
+### Tests never call a real API
+
+- **Unit tests** replace other services and the network with mocks (`ClientProxy` mocks in Nest, no `$fetch` in web component tests).
+- **Gateway HTTP tests** (`apps/api-gateway/src/app/gateway.http.spec.ts`) boot the real gateway in-process (guards, CSRF check, validation, rate limits, error mapping) with every microservice replaced by a `mockClient()`. Each test sets what a service replies and checks what the gateway sent it.
+- **Web e2e** (`apps/web-e2e`) runs Playwright against the production web build, with its `/api` proxy pointed at `apps/web-e2e/mock-api/server.mjs`, an in-memory stand-in for the gateway. No services or database are needed.
 
 ## Adding things
 
@@ -144,7 +149,7 @@ After generating:
    - `main.ts` is `bootstrapMicroservice(AppModule, X_SERVICE)`.
    - Add a repository (`extends InMemoryRepository<X>`), a service (`extends CrudService`) and a controller (`extends CrudMessageController(XPatterns)`).
    - In the gateway, add `serviceClient(X_SERVICE)` to `clients.module.ts`, plus DTOs and a controller extending `CrudHttpController({ patterns, createDto, updateDto })`.
-   - Give it a unique debug port in its `serve` target and add it to the `dev` / `start:api` scripts, the e2e `dependsOn` list, `.env.example` and `docker-compose.yml`.
+   - Give it a unique debug port in its `serve` target and add it to the `dev` / `start:api` scripts, `.env.example` and `docker-compose.yml`. In `gateway.http.spec.ts`, override its client with a `mockClient()`.
 
    See `libs/api/core/README.md` for the extension points.
 

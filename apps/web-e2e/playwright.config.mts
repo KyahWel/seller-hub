@@ -2,8 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 
-// For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+// The tests run against the production web build on its own port, talking to
+// a mock API (mock-api/server.mjs) instead of the gateway and services.
+const WEB_PORT = 4300;
+const MOCK_API_PORT = 4301;
+const baseURL = process.env['BASE_URL'] || `http://localhost:${WEB_PORT}`;
 
 /**
  * Read environment variables from file.
@@ -29,16 +32,27 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /*
-   * The production server build: the app needs its server for SSR, the
-   * signed-out redirect and the /api proxy, so a static export won't do.
-   */
-  webServer: {
-    command: 'npx nx run @org/web:preview',
-    url: 'http://localhost:4200',
-    reuseExistingServer: true,
-    cwd: workspaceRoot,
-  },
+  webServer: [
+    {
+      command: 'node apps/web-e2e/mock-api/server.mjs',
+      url: `http://localhost:${MOCK_API_PORT}/api/health`,
+      env: { MOCK_API_PORT: String(MOCK_API_PORT) },
+      reuseExistingServer: false,
+      cwd: workspaceRoot,
+    },
+    {
+      // Built by the e2e target's dependency on @org/web:build.
+      command: 'node apps/web/.output/server/index.mjs',
+      url: `http://localhost:${WEB_PORT}/login`,
+      env: {
+        HOST: 'localhost',
+        PORT: String(WEB_PORT),
+        NUXT_API_BASE_URL: `http://localhost:${MOCK_API_PORT}/api`,
+      },
+      reuseExistingServer: false,
+      cwd: workspaceRoot,
+    },
+  ],
   projects: [
     {
       name: 'chromium',

@@ -9,6 +9,13 @@
     ],
     "implicitDependencies": [
       "@org/web"
-    ]
+    ],
+    "targets": {
+      "e2e": {
+        "dependsOn": [
+          "@org/web:build"
+        ]
+      }
+    }
   }
 }
