@@ -73,7 +73,7 @@
     "@swc/helpers": "0.5.18",
     "@swc/jest": "~0.2.38",
     "@types/jest": "~30.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/coverage-v8": "~4.1.0",
     "@vue/test-utils": "^2.4.6",
