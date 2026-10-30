@@ -81,7 +81,7 @@
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-playwright": "^1.6.2",
     "h3": "^1.8.2",
-    "happy-dom": "^20.14.5",
+    "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "jest": "~30.3.0",
     "jest-environment-node": "~30.3.0",
